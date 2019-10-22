@@ -85,11 +85,36 @@ def get_starting_nodes(tree_graph):
 def get_sink_nodes(tree_graph):
     starting_nodes = []
     for node in tree_graph.nodes:
-        if len(tree_graph.pred[node]) == 0:
+        if len(tree_graph.succ[node]) == 0:
             starting_nodes.append(node)
     return starting_nodes
-        
+
+def get_contigs(tree_graph, starting_nodes, ending_nodes):
+    contig_list = []
+    for i in starting_nodes:
+        for j in ending_nodes:
+             path_ite = nx.algorithms.simple_paths.all_simple_paths(tree_graph,
+                                                        i,
+                                                        j)
+             for k in path_ite:
+                 contig = "".join(k)
+                 contig_tuple = (contig, len(contig))
+                 contig_list.append(contig_tuple)
+    return contig_list
+
+def fill(text, width=80):
+    """Split text with a line return to respect fasta format"""
+    return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
+
+def save_contigs(contig_list, output_file):
+    with open(output_file, "w") as filout:
+        for i in range(len(contig_list)):
+            filout.write("contig_{} len = {}\n".format(i, contig_list[i][1]))
+            filout.write(fill(contig_list[i][0]) + "\n")
+            
+    
 def main():
+    output = "my_contigs.fasta"
     parameters = args_check(sys.argv[1:])
     kmer_dict = build_kmer_dict(parameters[0], parameters[1]) 
     tree_graph = build_graph(kmer_dict)
@@ -97,7 +122,12 @@ def main():
     ending_nodes = get_sink_nodes(tree_graph)
     print("START\n", starting_nodes)
     print("END\n", ending_nodes)
+    contig_list = get_contigs(tree_graph, starting_nodes, ending_nodes)
+    print(contig_list)
+    save_contigs(contig_list, output)
     return 0
+            
+
 
 def std():
     pass
@@ -113,14 +143,6 @@ def remove_paths():
 
 
 def select_best_path():
-    pass
-
-
-def save_contigs():
-    pass
-
-
-def get_contigs():
     pass
 
 
