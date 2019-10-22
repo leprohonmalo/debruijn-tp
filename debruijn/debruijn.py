@@ -9,6 +9,7 @@ Created on Tue Oct 22 11:22:33 2019
 import os
 import sys
 import getopt
+import math
 import pytest
 import pylint
 import networkx as nx
@@ -97,7 +98,7 @@ def get_contigs(tree_graph, starting_nodes, ending_nodes):
                                                         i,
                                                         j)
              for k in path_ite:
-                 contig = "".join(k)
+                 contig = k[0] + k[1:][-1]
                  contig_tuple = (contig, len(contig))
                  contig_list.append(contig_tuple)
     return contig_list
@@ -111,8 +112,10 @@ def save_contigs(contig_list, output_file):
         for i in range(len(contig_list)):
             filout.write("contig_{} len = {}\n".format(i, contig_list[i][1]))
             filout.write(fill(contig_list[i][0]) + "\n")
-            
-    
+
+def std(val_list):
+    pass
+
 def main():
     output = "my_contigs.fasta"
     parameters = args_check(sys.argv[1:])
@@ -126,13 +129,8 @@ def main():
     print(contig_list)
     save_contigs(contig_list, output)
     return 0
-            
 
-
-def std():
-    pass
-
-
+    
 
 def path_average_weight():
     pass
