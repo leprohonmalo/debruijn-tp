@@ -38,7 +38,7 @@ def args_check(argv):
         if opt in ("-i", "--init_file"):
             fastq_file = arg
         elif opt in ("-k", "--kmer_sizes"):
-            kmer_size = arg
+            kmer_size = int(arg)
         elif opt in ("-o", "--config"):
             config_file = arg       
         
@@ -58,13 +58,23 @@ def cut_kmer(seq, k):
     for i in range(len(seq) - k + 1):
         yield seq[i:i+k]    
 
-def main():
-    parameters = args_check(sys.argv[1:])
-    read_list = read_fastq(parameters[0])
+def build_kmer_dict(fastq_file, k):
+    read_list = read_fastq(fastq_file) 
+    kmer_dict = {}
     for i in read_list:
         print(i)
-        for j in cut_kmer(i[:-1], 3):
-            print(j)    
+        for kmer in cut_kmer(i[:-1], k):
+            print(kmer)
+            if kmer in kmer_dict:
+                kmer_dict[kmer] = kmer_dict[kmer] + 1
+            else:
+                kmer_dict[kmer] = 1
+    return kmer_dict
+
+def main():
+    parameters = args_check(sys.argv[1:])
+    kmer_dict = build_kmer_dict(parameters[0], parameters[1]) 
+    print(kmer_dict)
 
 if __name__ == "__main__":
     main()
