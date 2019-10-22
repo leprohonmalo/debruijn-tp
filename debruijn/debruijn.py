@@ -19,11 +19,13 @@ def args_check(argv):
         Parameter:
             argv : a list of the different argument in the input commande line
         Output:
-            path_list : a list of parameter values (paths)
+            arg_list : a list of parameter values 
     """
     # Check that every needed argument are provided.
     try:
-        opts, args = getopt.getopt(argv, "i:k:o:", ["init_file=", "kmer_size=", "config="])
+        opts, args = getopt.getopt(argv,
+                                   "i:k:o:",
+                                   ["init_file=", "kmer_size=", "config="])
     except getopt.GetoptError:
         sys.exit(2)
 
@@ -41,13 +43,22 @@ def args_check(argv):
             config_file = arg       
         
             
-    path_list = [fastq_file, kmer_size, config_file]
+    arg_list = [fastq_file, kmer_size, config_file]
 
-    return path_list
+    return arg_list
+
+def read_fastq(fastq_file):
+    with open(fastq_file, "r") as file_in:
+        for line in file_in:
+            yield next(file_in)
+            next(file_in)
+            next(file_in)
 
 def main():
     parameters = args_check(sys.argv[1:])
-    print(parameters)
+    read_list = read_fastq(parameters[0])
+    for i in read_list:
+        print(i)
 
 if __name__ == "__main__":
     main()
