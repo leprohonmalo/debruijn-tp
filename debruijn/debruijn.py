@@ -53,12 +53,18 @@ def read_fastq(fastq_file):
             yield next(file_in)
             next(file_in)
             next(file_in)
+            
+def cut_kmer(seq, k):
+    for i in range(len(seq) - k + 1):
+        yield seq[i:i+k]    
 
 def main():
     parameters = args_check(sys.argv[1:])
     read_list = read_fastq(parameters[0])
     for i in read_list:
         print(i)
+        for j in cut_kmer(i[:-1], 3):
+            print(j)    
 
 if __name__ == "__main__":
     main()
