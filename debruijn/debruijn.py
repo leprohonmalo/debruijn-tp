@@ -5,14 +5,14 @@ Created on Tue Oct 22 11:22:33 2019
 
 @author: mleprohon
 """
-
+import statistics
 import os
 import sys
 import getopt
-import math
 import pytest
 import pylint
 import networkx as nx
+import random
 
 def args_check(argv):
     """This function collect parameters from the input command line, and check that every needed
@@ -94,11 +94,15 @@ def get_contigs(tree_graph, starting_nodes, ending_nodes):
     contig_list = []
     for i in starting_nodes:
         for j in ending_nodes:
-             path_ite = nx.algorithms.simple_paths.all_simple_paths(tree_graph,
-                                                        i,
-                                                        j)
-             for k in path_ite:
-                 contig = k[0] + k[1:][-1]
+            path_ite = nx.algorithms.simple_paths.all_simple_paths(
+                     tree_graph,
+                     i,
+                     j
+                     )
+            for k in path_ite:
+                 contig = k[0] 
+                 for l in range(1, len(k)):
+                     contig = contig + k[l][-1]
                  contig_tuple = (contig, len(contig))
                  contig_list.append(contig_tuple)
     return contig_list
@@ -110,39 +114,79 @@ def fill(text, width=80):
 def save_contigs(contig_list, output_file):
     with open(output_file, "w") as filout:
         for i in range(len(contig_list)):
-            filout.write("contig_{} len = {}\n".format(i, contig_list[i][1]))
+            filout.write(">contig_{} len={}\n".format(i, contig_list[i][1]))
             filout.write(fill(contig_list[i][0]) + "\n")
 
 def std(val_list):
-    pass
+    return statistics.stdev(val_list)
+
+def path_average_weight(graph, graph_path):
+    weight_list = []
+    for u, v, e in graph.subgraph(graph_path).edges(data=True):
+        weight_list.append(e['weight'])
+    return statistics.mean(weight_list)    
+
+
+def remove_paths(
+        graph,
+        graph_paths,
+        delete_entry_node=False,
+        delete_sink_node=False
+        ):
+    for i in range(len(graph_paths)):
+        node_to_remove = list(graph_paths[i])
+        if not delete_entry_node:
+            node_to_remove = node_to_remove[1:]
+        if not delete_sink_node:
+            node_to_remove = node_to_remove[:-1]
+        for n in node_to_remove:
+            graph.remove_node(n)
+        return graph
+
+def select_best_path(
+        graph,
+        graph_paths,
+        graph_path_lengths,
+        graph_path_weights,
+        delete_entry_node=False,
+        delete_sink_node=False,
+        ):
+    max_weight = max(graph_path_weights)
+    candidate = []
+    for i in range(len(graph_path_weights)):
+        if graph_path_weights[i] == max_weight:
+            candidate.append(i)
+    if len(candidate) > 1:
+        max_length = 0
+        best = []
+        for i in candidate:
+            if graph_path_lengths[i] >= max_length:
+                max_length = graph_path_lengths[i]
+                best.append(i)
+        if len(best) > 1:
+            best_path = random.sample(best, 1)
+            best_path = best_path[0]
+        else:
+            best_path = best[0]
+    else:
+        best_path = candidate[0]
+    bad_paths = graph_paths[:best_path] + graph_paths[best_path+1:]
+    return remove_paths(graph, bad_paths, delete_entry_node, delete_sink_node)
 
 def main():
-    output = "my_contigs.fasta"
     parameters = args_check(sys.argv[1:])
     kmer_dict = build_kmer_dict(parameters[0], parameters[1]) 
     tree_graph = build_graph(kmer_dict)
     starting_nodes = get_starting_nodes(tree_graph)
     ending_nodes = get_sink_nodes(tree_graph)
-    print("START\n", starting_nodes)
-    print("END\n", ending_nodes)
     contig_list = get_contigs(tree_graph, starting_nodes, ending_nodes)
-    print(contig_list)
-    save_contigs(contig_list, output)
+    save_contigs(contig_list, parameters[2])
+    graph_4 = nx.DiGraph()
+    graph_4.add_edges_from([(1, 2), (3, 2), (2, 4), (4, 5), (2, 8), (8, 9),
+                                (9, 5), (5, 6), (5, 7)])
+    graph_4 = select_best_path(graph_4, [[2, 4, 5], [2, 8, 9, 5]],
+                                          [1, 4], [10, 10])
     return 0
-
-    
-
-def path_average_weight():
-    pass
-
-
-def remove_paths():
-    pass
-
-
-def select_best_path():
-    pass
-
 
 def solve_bubble():
     pass
