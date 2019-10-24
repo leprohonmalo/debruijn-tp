@@ -15,8 +15,9 @@ import networkx as nx
 import random
 
 def args_check(argv):
-    """ This function collect parameters from the input command line, and check that every needed
-        parameter is provided and correct. Then it returns a list of parameter or call use().
+    """ This function collect parameters from the input command line, 
+        and check that every needed parameter is provided and correct. Then 
+        it returns a list of parameter or call use().
         Parameter:
             argv : a list of the different argument in the input commande line
         Output:
@@ -203,9 +204,10 @@ def remove_paths(
             node_to_remove = node_to_remove[1:]
         if not delete_sink_node:
             node_to_remove = node_to_remove[:-1]
+        print(node_to_remove)
         for n in node_to_remove:
             graph.remove_node(n)
-        return graph
+    return graph
 
 def select_best_path(
         graph,
@@ -237,6 +239,8 @@ def select_best_path(
         for i in candidate:
             if graph_path_lengths[i] >= max_length:
                 max_length = graph_path_lengths[i]
+        for i in candidate:
+            if graph_path_lengths[i] == max_length:
                 best.append(i)
         if len(best) > 1:
             best_path = random.sample(best, 1)
@@ -248,6 +252,30 @@ def select_best_path(
     bad_paths = graph_paths[:best_path] + graph_paths[best_path+1:]
     return remove_paths(graph, bad_paths, delete_entry_node, delete_sink_node)
 
+def solve_bubble(graph, ancestor_node, successor_node):
+    """ Function that solve a bubble in graph by keeping the most relevant 
+        graph.
+    """
+    path_ite = nx.algorithms.simple_paths.all_simple_paths(
+                     graph,
+                     ancestor_node,
+                     successor_node
+                     )
+    path_list = []
+    graph_path_weights = []
+    graph_path_lengths = []
+    for i in path_ite:
+        path_list.append(i)
+        graph_path_weights.append(path_average_weight(graph, i))
+        print(len(i))
+        graph_path_lengths.append(len(i))
+    print(path_list, graph_path_weights, graph_path_lengths)
+    return select_best_path(
+        graph, path_list,
+        graph_path_lengths, 
+        graph_path_weights
+        )
+
 def main():
     parameters = args_check(sys.argv[1:])
     kmer_dict = build_kmer_dict(parameters[0], parameters[1]) 
@@ -256,15 +284,15 @@ def main():
     ending_nodes = get_sink_nodes(tree_graph)
     contig_list = get_contigs(tree_graph, starting_nodes, ending_nodes)
     save_contigs(contig_list, parameters[2])
-    graph_4 = nx.DiGraph()
-    graph_4.add_edges_from([(1, 2), (3, 2), (2, 4), (4, 5), (2, 8), (8, 9),
-                                (9, 5), (5, 6), (5, 7)])
-    graph_4 = select_best_path(graph_4, [[2, 4, 5], [2, 8, 9, 5]],
-                                          [1, 4], [10, 10])
-    return 0
+    graph_1 = nx.DiGraph()
+    graph_1.add_weighted_edges_from([(1, 2, 10), (3, 2, 10), (2, 4, 15),
+                                         (4, 5, 15), (2, 10,10), (10, 5,10),
+                                         (2, 8, 3), (8, 9, 3), (9, 5, 3),
+                                         (5, 6, 10), (5, 7, 10)])
+    graph_1 = solve_bubble(graph_1, 2, 5)
 
-def solve_bubble():
-    pass
+    print((2,8) not in graph_1.edges())
+    return 0
 
 
 def simplify_bubbles():
