@@ -15,7 +15,7 @@ import networkx as nx
 import random
 
 def args_check(argv):
-    """This function collect parameters from the input command line, and check that every needed
+    """ This function collect parameters from the input command line, and check that every needed
         parameter is provided and correct. Then it returns a list of parameter or call use().
         Parameter:
             argv : a list of the different argument in the input commande line
@@ -49,6 +49,10 @@ def args_check(argv):
     return arg_list
 
 def read_fastq(fastq_file):
+    """ This function reads a fastq file and returns it as an iterativ object
+        Parameter:
+            fastq_file : a string representing a path to a file
+    """
     with open(fastq_file, "r") as file_in:
         for line in file_in:
             yield next(file_in).strip()
@@ -56,10 +60,22 @@ def read_fastq(fastq_file):
             next(file_in)
             
 def cut_kmer(seq, k):
+    """ This function cut a sequence into k-mers and returns them as an 
+        iterative object.
+        Parameter:
+            seq : a string representing a sequence.
+            k : an int representing the length of the extracted words
+    """
     for i in range(len(seq) - k + 1):
         yield seq[i:i+k]    
 
 def build_kmer_dict(fastq_file, k):
+    """ This function read a fastq file and returns a dictionnary of all 
+        k-mers in sequences in it with their abundance.
+        Parameter:
+            fastq_file : a string representing a path to a file
+            k : an int representing the length of the extracted words
+    """
     read_list = read_fastq(fastq_file) 
     kmer_dict = {}
     for i in read_list:
@@ -71,12 +87,21 @@ def build_kmer_dict(fastq_file, k):
     return kmer_dict
 
 def build_graph(kmer_dict):
+    """ This function build a graph with all kmers (of size k-1)
+        weigthed by their abundance.
+        Parameters:
+            kmer_dict : a dictionnary of k-mers with their abundance
+    """
     tree_graph = nx.DiGraph()
     for i in kmer_dict:
         tree_graph.add_edge(i[:-1], i[1:], weight=kmer_dict[i])
     return tree_graph
  
 def get_starting_nodes(tree_graph):
+    """ This function returns a list of the starting nodes in a graph.
+        Paramaters:
+            tree_graph : an nx.Graph
+    """
     starting_nodes = []
     for node in tree_graph.nodes:
         if len(tree_graph.pred[node]) == 0:
@@ -84,6 +109,10 @@ def get_starting_nodes(tree_graph):
     return starting_nodes
 
 def get_sink_nodes(tree_graph):
+    """ This function returns a list of the sink nodes in a graph.
+        Paramaters:
+            tree_graph : an nx.Graph
+    """
     starting_nodes = []
     for node in tree_graph.nodes:
         if len(tree_graph.succ[node]) == 0:
@@ -91,6 +120,14 @@ def get_sink_nodes(tree_graph):
     return starting_nodes
 
 def get_contigs(tree_graph, starting_nodes, ending_nodes):
+    """ This function returns a list of all contigs from a De Bruyn Graph
+        of k-mers by looking at all possible path between starting and sink 
+        nodes.
+        Parameters:
+            tree_graph : an nx.Graph representing a De Bruyn Graph of k-mers.
+            starting_nodes : a list of starting node.
+            sink_nodes : a list of sink nodes.
+    """
     contig_list = []
     for i in starting_nodes:
         for j in ending_nodes:
@@ -108,19 +145,37 @@ def get_contigs(tree_graph, starting_nodes, ending_nodes):
     return contig_list
 
 def fill(text, width=80):
-    """Split text with a line return to respect fasta format"""
+    """ Split text with a line return to respect fasta format.
+        Parameters:
+            text : a string representing a text
+            width : an int representing the formatting line width.
+    """
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def save_contigs(contig_list, output_file):
+    """ This function save a list of contigs in a file in fasta format.
+        Parameters:
+            contig_list : a list of contigs.
+            output_file : a string representing a path to and output file.
+    """
     with open(output_file, "w") as filout:
         for i in range(len(contig_list)):
             filout.write(">contig_{} len={}\n".format(i, contig_list[i][1]))
             filout.write(fill(contig_list[i][0]) + "\n")
 
 def std(val_list):
+    """ Call statistics.stdev on a list of values.
+        Parameter:
+            val_list : a list of values.
+    """
     return statistics.stdev(val_list)
 
 def path_average_weight(graph, graph_path):
+    """ This fonction compute the average weigth of edge in a graph path.
+        Parameters:
+            graph : a nx.Graph.
+            graph_path : a path in graph.
+    """
     weight_list = []
     for u, v, e in graph.subgraph(graph_path).edges(data=True):
         weight_list.append(e['weight'])
@@ -133,6 +188,15 @@ def remove_paths(
         delete_entry_node=False,
         delete_sink_node=False
         ):
+    """ This function removes nodes belonging to a path in graph.
+        Parameters:
+            graph : a nx.Graph . 
+            graph_paths : a list of path in graph.
+            delete_entry_node : Boolean, delete starting node of a
+            path if True.
+            delete_sink_node : Boolean, delete sink node of a
+            path if True.
+    """
     for i in range(len(graph_paths)):
         node_to_remove = list(graph_paths[i])
         if not delete_entry_node:
@@ -151,6 +215,17 @@ def select_best_path(
         delete_entry_node=False,
         delete_sink_node=False,
         ):
+    """ This function removes nodes belonging to a path in graph.
+        Parameters:
+            graph : a nx.Graph . 
+            graph_paths : a list of path in graph.
+            graph_path_lengths : a list of average length of paths in graph.
+            graph_path_weights : a list of average weights of paths in graph.
+            delete_entry_node : Boolean, delete starting node of a
+            path if True.
+            delete_sink_node : Boolean, delete sink node of a
+            path if True.
+    """
     max_weight = max(graph_path_weights)
     candidate = []
     for i in range(len(graph_path_weights)):
